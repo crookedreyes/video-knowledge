@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real, unique, foreignKey } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, index, primaryKey } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 
 // Videos table - stores video metadata
@@ -43,7 +43,7 @@ export const transcriptSegments = sqliteTable(
     segmentIndex: integer('segment_index').notNull(),
   },
   (table) => ({
-    videoIdIdx: sql`CREATE INDEX IF NOT EXISTS transcript_segments_video_id_idx ON ${table} (video_id)`,
+    videoIdIdx: index('transcript_segments_video_id_idx').on(table.videoId),
   })
 );
 
@@ -61,7 +61,7 @@ export const chapters = sqliteTable(
     chapterIndex: integer('chapter_index').notNull(),
   },
   (table) => ({
-    videoIdIdx: sql`CREATE INDEX IF NOT EXISTS chapters_video_id_idx ON ${table} (video_id)`,
+    videoIdIdx: index('chapters_video_id_idx').on(table.videoId),
   })
 );
 
@@ -89,7 +89,7 @@ export const videoTags = sqliteTable(
     source: text('source', { enum: ['auto', 'manual'] }).default('manual').notNull(),
   },
   (table) => ({
-    pk: sql`PRIMARY KEY (video_id, tag_id)`,
+    pk: primaryKey({ columns: [table.videoId, table.tagId] }),
   })
 );
 
@@ -105,7 +105,7 @@ export const chatSessions = sqliteTable(
     updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
   },
   (table) => ({
-    videoIdIdx: sql`CREATE INDEX IF NOT EXISTS chat_sessions_video_id_idx ON ${table} (video_id)`,
+    videoIdIdx: index('chat_sessions_video_id_idx').on(table.videoId),
   })
 );
 
@@ -123,7 +123,7 @@ export const chatMessages = sqliteTable(
     createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
   },
   (table) => ({
-    sessionIdIdx: sql`CREATE INDEX IF NOT EXISTS chat_messages_session_id_idx ON ${table} (session_id)`,
+    sessionIdIdx: index('chat_messages_session_id_idx').on(table.sessionId),
   })
 );
 

@@ -12,6 +12,9 @@ import { VectorStoreService } from './services/vectorStore.js';
 import { settingsRouter } from './routes/settings.js';
 import { dockerSettingsRouter } from './routes/docker.js';
 import { healthRouter } from './routes/health.js';
+import { ingestRouter } from './routes/ingest.js';
+import { videosRouter } from './routes/videos.js';
+import { PipelineOrchestrator } from './services/pipeline/orchestrator.js';
 
 const pinoLogger = {
   info: (msg: string | object, data?: string | object) => {
@@ -34,6 +37,7 @@ const app = new Hono<{
     embeddingService: EmbeddingService;
     transcriptionService: TranscriptionService;
     vectorStoreService: VectorStoreService;
+    pipeline: PipelineOrchestrator;
   };
 }>();
 
@@ -89,6 +93,9 @@ pinoLogger.info('Transcription service initialized successfully');
 const vectorStoreService = new VectorStoreService(embeddingService, configService);
 pinoLogger.info('VectorStore service initialized successfully');
 
+const pipeline = new PipelineOrchestrator(db, configService);
+pinoLogger.info('Pipeline orchestrator initialized');
+
 app.use(async (c, next) => {
   c.set('db', db);
   c.set('configService', configService);
@@ -98,12 +105,16 @@ app.use(async (c, next) => {
   c.set('embeddingService', embeddingService);
   c.set('transcriptionService', transcriptionService);
   c.set('vectorStoreService', vectorStoreService);
+  c.set('pipeline', pipeline);
   await next();
 });
 
 app.route('/api/settings', settingsRouter);
 app.route('/api/settings/docker', dockerSettingsRouter);
 app.route('/api/health', healthRouter);
+
+app.route('/api/ingest', ingestRouter);
+app.route('/api/videos', videosRouter);
 
 app.get('/api/health/docker', async (c) => {
   const status = await dockerManager.getStatus();
