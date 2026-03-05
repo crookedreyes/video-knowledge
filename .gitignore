@@ -1,0 +1,25 @@
+# Tauri
+src-tauri/target/
+src-tauri/Cargo.lock
+
+# Node
+node_modules/
+dist/
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vite
+.vite/
+
+# Worktrees (isolated development)
+.worktrees/
