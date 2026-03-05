@@ -15,7 +15,6 @@ import { healthRouter } from './routes/health.js';
 import { ingestRouter } from './routes/ingest.js';
 import { videosRouter } from './routes/videos.js';
 import { tagsRouter } from './routes/tags.js';
-import { filesRouter } from './routes/files.js';
 import { PipelineOrchestrator } from './services/pipeline/orchestrator.js';
 
 const pinoLogger = {
@@ -111,6 +110,35 @@ app.use(async (c, next) => {
   await next();
 });
 
+// Static file serving for media
+app.get('/media/*', async (c) => {
+  const configService = c.get('configService');
+  const dataPath = configService.get<string>('paths.data') || '~/.local/share/video-knowledge';
+  const resolvedDataPath = dataPath.replace(/^~/, process.env.HOME || '');
+  const requestedPath = c.req.path.replace('/media/', '');
+
+  // Reject path traversal attempts
+  if (requestedPath.includes('..') || requestedPath.includes('\0')) {
+    return c.json({ error: 'Forbidden' }, 403);
+  }
+
+  // Only allow access to thumbnails and videos subdirectories
+  const allowedPrefixes = ['thumbnails/', 'videos/'];
+  if (!allowedPrefixes.some(p => requestedPath.startsWith(p))) {
+    return c.json({ error: 'Forbidden' }, 403);
+  }
+
+  const filePath = `${resolvedDataPath}/${requestedPath}`;
+  const file = Bun.file(filePath);
+  if (!(await file.exists())) {
+    return c.json({ error: 'File not found' }, 404);
+  }
+
+  return new Response(file, {
+    headers: { 'Content-Type': file.type || 'application/octet-stream' },
+  });
+});
+
 app.route('/api/settings', settingsRouter);
 app.route('/api/settings/docker', dockerSettingsRouter);
 app.route('/api/health', healthRouter);
@@ -118,7 +146,6 @@ app.route('/api/health', healthRouter);
 app.route('/api/ingest', ingestRouter);
 app.route('/api/videos', videosRouter);
 app.route('/api/tags', tagsRouter);
-app.route('/api/files', filesRouter);
 
 app.get('/api/health/docker', async (c) => {
   const status = await dockerManager.getStatus();
