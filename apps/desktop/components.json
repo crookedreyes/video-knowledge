@@ -4,5 +4,8 @@
   "rsc": false,
   "tsx": true,
   "aliasPrefix": "@",
-  "baseColor": "slate"
+  "aliases": {
+    "components": "@/components",
+    "utils": "@/lib/utils"
+  }
 }
