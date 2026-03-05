@@ -150,4 +150,8 @@ const HOST = process.env.HOST || 'localhost';
 
 pinoLogger.info(`Starting server on ${HOST}:${PORT}`);
 
-export default app;
+export default {
+  port: PORT,
+  hostname: HOST,
+  fetch: app.fetch,
+};
