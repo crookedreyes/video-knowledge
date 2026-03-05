@@ -175,7 +175,6 @@ export function LibraryPage() {
   })
 
   // For each video, fetch its tags via the detail endpoint (since list doesn't include tags)
-  // We'll use the video detail data that includes tags
   const { data: videoDetailsData } = useQuery({
     queryKey: ['video-details-tags'],
     queryFn: async () => {

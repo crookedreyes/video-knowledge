@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { apiGet, apiPatch, apiPost, apiDelete } from '@/lib/api'
+import { apiGet, apiPut, apiPost, apiDelete } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
@@ -150,7 +150,7 @@ function SummaryPanel({ video }: { video: VideoDetail }) {
 
   const saveMutation = useMutation({
     mutationFn: (summary: string) =>
-      apiPatch(`/videos/${video.id}`, { summary }),
+      apiPut(`/videos/${video.id}/summary`, { summary }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['video', video.id] })
       setEditing(false)
