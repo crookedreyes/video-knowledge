@@ -15,17 +15,10 @@ function isYouTubeUrl(url: string): boolean {
   return YOUTUBE_REGEX.test(url)
 }
 
-interface AddVideoResponse {
+interface IngestResponse {
   success: boolean
-  data?: {
-    id: string
-    title: string
-    youtubeId: string
-    status: string
-  }
+  videoId?: string
   error?: string
-  existingVideoId?: string
-  existingVideoTitle?: string
 }
 
 interface AddVideoDialogProps {
@@ -35,8 +28,6 @@ interface AddVideoDialogProps {
 
 /**
  * Inner component that starts polling once we have a videoId.
- * We render this inside AddVideoDialog only after successful submission so
- * the hook can start polling for that specific video.
  */
 function IngestionPoller({ videoId }: { videoId: string }) {
   useIngestion(videoId)
@@ -46,10 +37,6 @@ function IngestionPoller({ videoId }: { videoId: string }) {
 export function AddVideoDialog({ open, onClose }: AddVideoDialogProps) {
   const [url, setUrl] = React.useState('')
   const [validationError, setValidationError] = React.useState<string | null>(null)
-  const [duplicateInfo, setDuplicateInfo] = React.useState<{
-    id: string
-    title: string
-  } | null>(null)
   const [submitting, setSubmitting] = React.useState(false)
   const [newVideoId, setNewVideoId] = React.useState<string | null>(null)
 
@@ -61,7 +48,6 @@ export function AddVideoDialog({ open, onClose }: AddVideoDialogProps) {
     if (open) {
       setUrl('')
       setValidationError(null)
-      setDuplicateInfo(null)
       setNewVideoId(null)
       setTimeout(() => inputRef.current?.focus(), 50)
     }
@@ -91,7 +77,6 @@ export function AddVideoDialog({ open, onClose }: AddVideoDialogProps) {
 
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUrl(e.target.value)
-    setDuplicateInfo(null)
     if (validationError) validateUrl(e.target.value)
   }
 
@@ -100,60 +85,30 @@ export function AddVideoDialog({ open, onClose }: AddVideoDialogProps) {
     if (!validateUrl(url)) return
 
     setSubmitting(true)
-    setDuplicateInfo(null)
 
     try {
-      const res = await apiPost<AddVideoResponse>('/videos', { url })
+      const res = await apiPost<IngestResponse>('/ingest', { url })
 
-      if (res.success && res.data) {
-        // Add to ingestion store so IngestionProgress can show it
+      if (res.success && res.videoId) {
         addIngestion({
-          id: res.data.id,
-          title: res.data.title,
-          youtubeId: res.data.youtubeId,
+          id: res.videoId,
+          title: 'Processing…',
+          youtubeId: '',
           status: 'pending',
           currentStep: null,
           steps: [],
           errorMessage: null,
           logs: [],
         })
-        setNewVideoId(res.data.id)
+        setNewVideoId(res.videoId)
         toast.success('Video added — ingestion started')
         onClose()
+      } else {
+        setValidationError(res.error || 'Failed to add video')
       }
     } catch (err: unknown) {
-      // Try to parse structured error response
-      if (err instanceof Response || (err as { status?: number }).status === 409) {
-        // Handled below via apiPost which throws for !ok — but we need the body
-        // apiPost throws Error with message "API error: Conflict" for 409
-        // Re-issue request manually to get body isn't ideal; handle by checking
-        // the error message from the thrown Error
-      }
-
       const message = err instanceof Error ? err.message : String(err)
-
-      if (message.includes('409') || message.toLowerCase().includes('conflict')) {
-        // We can't easily get the body from apiPost's thrown Error.
-        // Make a second fetch to get duplicate details.
-        try {
-          const dupeRes = await fetch('http://localhost:8000/api/videos', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url }),
-          })
-          const dupeBody: AddVideoResponse = await dupeRes.json()
-          if (dupeBody.existingVideoId) {
-            setDuplicateInfo({
-              id: dupeBody.existingVideoId,
-              title: dupeBody.existingVideoTitle ?? 'existing video',
-            })
-          }
-        } catch {
-          setValidationError('This video already exists in your library')
-        }
-      } else {
-        setValidationError(message || 'Failed to add video')
-      }
+      setValidationError(message || 'Failed to add video')
     } finally {
       setSubmitting(false)
     }
@@ -221,24 +176,17 @@ export function AddVideoDialog({ open, onClose }: AddVideoDialogProps) {
                 onChange={handleUrlChange}
                 onBlur={() => url && validateUrl(url)}
                 placeholder="https://www.youtube.com/watch?v=..."
-                aria-describedby={
-                  validationError
-                    ? 'url-error'
-                    : duplicateInfo
-                    ? 'url-duplicate'
-                    : undefined
-                }
-                aria-invalid={!!(validationError || duplicateInfo)}
+                aria-describedby={validationError ? 'url-error' : undefined}
+                aria-invalid={!!validationError}
                 className={cn(
                   'w-full px-3 py-2 rounded-md text-sm bg-slate-800 border',
                   'placeholder:text-slate-500 focus:outline-none focus:ring-2',
-                  validationError || duplicateInfo
+                  validationError
                     ? 'border-red-500 focus:ring-red-500'
                     : 'border-slate-600 focus:ring-slate-400'
                 )}
               />
 
-              {/* Inline validation feedback */}
               {validationError && (
                 <p
                   id="url-error"
@@ -246,24 +194,6 @@ export function AddVideoDialog({ open, onClose }: AddVideoDialogProps) {
                   className="mt-1.5 text-xs text-red-400"
                 >
                   {validationError}
-                </p>
-              )}
-
-              {/* Duplicate link */}
-              {duplicateInfo && (
-                <p
-                  id="url-duplicate"
-                  role="alert"
-                  className="mt-1.5 text-xs text-amber-400"
-                >
-                  This video already exists:{' '}
-                  <a
-                    href={`/video/${duplicateInfo.id}`}
-                    className="underline hover:text-amber-300"
-                    onClick={onClose}
-                  >
-                    {duplicateInfo.title}
-                  </a>
                 </p>
               )}
             </div>

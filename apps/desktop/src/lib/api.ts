@@ -2,7 +2,7 @@
  * HTTP client wrapper for backend API calls
  */
 
-const API_BASE_URL = 'http://localhost:8000/api'
+const API_BASE_URL = 'http://localhost:3456/api'
 
 export interface ApiResponse<T> {
   success: boolean

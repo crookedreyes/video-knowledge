@@ -6,22 +6,30 @@ import { useIngestionStore, type ActiveIngestion, type IngestionStatus } from '@
 const TERMINAL_STATUSES: IngestionStatus[] = ['ready', 'error']
 const POLL_INTERVAL_MS = 2000
 
-interface VideoStatusResponse {
+const ALL_STEPS = ['downloading', 'transcribing', 'embedding', 'summarizing', 'tagging'] as const
+
+interface VideoResponse {
   success: boolean
   data: {
     id: string
     status: IngestionStatus
-    currentStep: string | null
-    steps: Array<{ name: string; completed: boolean; active: boolean }>
     errorMessage: string | null
     title: string
     youtubeId: string
   }
 }
 
+function deriveSteps(status: IngestionStatus): Array<{ name: string; completed: boolean; active: boolean }> {
+  const currentIdx = ALL_STEPS.indexOf(status as typeof ALL_STEPS[number])
+  return ALL_STEPS.map((name, idx) => ({
+    name,
+    completed: status === 'ready' ? true : idx < currentIdx,
+    active: idx === currentIdx,
+  }))
+}
+
 /**
  * Starts polling ingestion status for a video and keeps the store updated.
- * Call this after adding a new video to trigger real-time updates.
  */
 export function useIngestion(videoId: string | null) {
   const { updateIngestion, appendLog } = useIngestionStore()
@@ -40,16 +48,18 @@ export function useIngestion(videoId: string | null) {
 
     const poll = async () => {
       try {
-        const res = await apiGet<VideoStatusResponse>(`/videos/${videoId}/status`)
+        const res = await apiGet<VideoResponse>(`/videos/${videoId}`)
         if (!isMountedRef.current) return
 
         const { data } = res
+        const steps = deriveSteps(data.status)
         const patch: Partial<ActiveIngestion> = {
           status: data.status,
-          currentStep: data.currentStep,
-          steps: data.steps,
+          currentStep: data.status,
+          steps,
           errorMessage: data.errorMessage,
           title: data.title,
+          youtubeId: data.youtubeId,
         }
         updateIngestion(videoId, patch)
         appendLog(videoId, `[${new Date().toLocaleTimeString()}] Status: ${data.status}`)
@@ -63,11 +73,10 @@ export function useIngestion(videoId: string | null) {
           }
         }
       } catch {
-        // silently skip transient errors; stop polling on repeated failures handled elsewhere
+        // silently skip transient errors
       }
     }
 
-    // Immediate first poll
     poll()
     intervalRef.current = setInterval(poll, POLL_INTERVAL_MS)
 
