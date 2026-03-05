@@ -22,7 +22,8 @@
     "openai": "^6.25.0",
     "pino": "^8.17.0",
     "ulid": "^2.3.0",
-    "zod": "^3.22.0"
+    "zod": "^3.22.0",
+    "chromadb": "^3.3.1"
   },
   "devDependencies": {
     "drizzle-kit": "^0.20.0",

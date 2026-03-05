@@ -13,6 +13,7 @@
         "@types/dockerode": "^4.0.1",
         "@vide-know/shared": "workspace:*",
         "better-sqlite3": "^9.2.0",
+        "chromadb": "^3.3.1",
         "dockerode": "^4.0.9",
         "drizzle-orm": "^0.30.0",
         "hono": "^4.0.0",
@@ -419,6 +420,18 @@
     "check-error": ["check-error@1.0.3", "", { "dependencies": { "get-func-name": "^2.0.2" } }, "sha512-iKEoDYaRmd1mxM90a2OEfWhjsjPpYPuQ+lMYsoxB126+t8fw7ySEO48nmDg5COTjxDI65/Y2OWpeEHk3ZOe8zg=="],
 
     "chownr": ["chownr@1.1.4", "", {}, "sha512-jJ0bqzaylmJtVnNgzTeSOs8DPavpbYgEr/b0YL8/2GO3xJEhInFmhKMUnEJQjZumK7KXGFhUy89PrsJWlakBVg=="],
+
+    "chromadb": ["chromadb@3.3.1", "", { "dependencies": { "semver": "^7.7.1" }, "optionalDependencies": { "chromadb-js-bindings-darwin-arm64": "^1.3.1", "chromadb-js-bindings-darwin-x64": "^1.3.1", "chromadb-js-bindings-linux-arm64-gnu": "^1.3.1", "chromadb-js-bindings-linux-x64-gnu": "^1.3.1", "chromadb-js-bindings-win32-x64-msvc": "^1.3.1" }, "bin": { "chroma": "dist/cli.mjs" } }, "sha512-EXBpPMlRbLXzcPupCRKzjzd2enml5ak3xOJKjX2DnfOhC+fZ2kk5tqQq90fG1GuvtM553P8b/Q+iM2aTP8KfZQ=="],
+
+    "chromadb-js-bindings-darwin-arm64": ["chromadb-js-bindings-darwin-arm64@1.3.1", "", { "os": "darwin", "cpu": "arm64" }, "sha512-MMo+TX8tRrhy/0KGrA30kVTZ+EwrRoXRSQA7EGLuKW6FTEVX7hbF5l0EFWgDTw6YPX/KY2ySYNQH3VFwRyxYFA=="],
+
+    "chromadb-js-bindings-darwin-x64": ["chromadb-js-bindings-darwin-x64@1.3.1", "", { "os": "darwin", "cpu": "x64" }, "sha512-zboZ29wtP7vrevfYhNXFToSM9sTaXP+KALYF4B6wJNp4jymBRSAzhAsHBrVmAJQxgPEJatoODAWqsVxaGLYkog=="],
+
+    "chromadb-js-bindings-linux-arm64-gnu": ["chromadb-js-bindings-linux-arm64-gnu@1.3.1", "", { "os": "linux", "cpu": "arm64" }, "sha512-JPzoIy5vb4Gzu7kZnCkcMtsv+HPx/LWBFu72IDbnkUp8UleNyXup7fVX/tUvwHq+OPtj7ZB4YWwiP3SzKIWEgA=="],
+
+    "chromadb-js-bindings-linux-x64-gnu": ["chromadb-js-bindings-linux-x64-gnu@1.3.1", "", { "os": "linux", "cpu": "x64" }, "sha512-nQvVhmHs2XXbzA+Xka8A4UMiyMlk86AFmiy1Pt+kzQkuJT5vOMKOcgJW/Nh2m0CtEjkzvj4Mxr2/31BiLil7Hg=="],
+
+    "chromadb-js-bindings-win32-x64-msvc": ["chromadb-js-bindings-win32-x64-msvc@1.3.1", "", { "os": "win32", "cpu": "x64" }, "sha512-3B3WwT1aM9vxFZBqlDgnA+R025b8pOudGM4hEZTmxV2rHND3Hn7C87mQO5WsUMarOUmX4Sd1NlhC2ANKCIWfLw=="],
 
     "class-variance-authority": ["class-variance-authority@0.7.1", "", { "dependencies": { "clsx": "^2.1.1" } }, "sha512-Ka+9Trutv7G8M6WT6SeiRWz792K5qEqIGEGzXKhAE6xOWAY6pPH8U+9IY3oCMv6kqTmLsv7Xh/2w2RigkePMsg=="],
 
