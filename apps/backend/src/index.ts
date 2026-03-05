@@ -32,17 +32,17 @@ app.get("/api/settings", (c) => {
 app.get("/api/settings/:key", (c) => {
   try {
     const key = c.req.param("key");
-    const setting = db
+    const settings_list = db
       .select()
       .from(settings)
       .where(eq(settings.key, key))
-      .get();
+      .all();
 
-    if (!setting) {
+    if (!settings_list || settings_list.length === 0) {
       return c.json({ error: "Setting not found" }, 404);
     }
 
-    return c.json(setting);
+    return c.json(settings_list[0]);
   } catch (error) {
     console.error("Error fetching setting:", error);
     return c.json({ error: "Internal server error" }, 500);
@@ -63,26 +63,21 @@ app.post("/api/settings", async (c) => {
       .select()
       .from(settings)
       .where(eq(settings.key, key))
-      .get();
+      .all();
 
-    let result;
-    if (existing) {
+    if (existing && existing.length > 0) {
       db.update(settings).set({ value }).where(eq(settings.key, key)).run();
-      result = db
-        .select()
-        .from(settings)
-        .where(eq(settings.key, key))
-        .get();
     } else {
       db.insert(settings).values({ key, value }).run();
-      result = db
-        .select()
-        .from(settings)
-        .where(eq(settings.key, key))
-        .get();
     }
 
-    return c.json(result);
+    const result = db
+      .select()
+      .from(settings)
+      .where(eq(settings.key, key))
+      .all();
+
+    return c.json(result && result.length > 0 ? result[0] : null);
   } catch (error) {
     console.error("Error saving setting:", error);
     return c.json({ error: "Internal server error" }, 500);
@@ -103,26 +98,21 @@ app.post("/api/settings/:key", async (c) => {
       .select()
       .from(settings)
       .where(eq(settings.key, key))
-      .get();
+      .all();
 
-    let result;
-    if (existing) {
+    if (existing && existing.length > 0) {
       db.update(settings).set({ value: body.value }).where(eq(settings.key, key)).run();
-      result = db
-        .select()
-        .from(settings)
-        .where(eq(settings.key, key))
-        .get();
     } else {
       db.insert(settings).values({ key, value: body.value }).run();
-      result = db
-        .select()
-        .from(settings)
-        .where(eq(settings.key, key))
-        .get();
     }
 
-    return c.json(result);
+    const result = db
+      .select()
+      .from(settings)
+      .where(eq(settings.key, key))
+      .all();
+
+    return c.json(result && result.length > 0 ? result[0] : null);
   } catch (error) {
     console.error("Error saving setting:", error);
     return c.json({ error: "Internal server error" }, 500);

@@ -23,7 +23,7 @@ export function Settings() {
     try {
       setLoading(true)
       setError(null)
-      const response = await axios.get('http://localhost:3001/api/settings')
+      const response = await axios.get('http://localhost:3000/api/settings')
       setSettings(response.data)
     } catch (err) {
       setError('Failed to load settings')
@@ -36,7 +36,7 @@ export function Settings() {
   async function handleUpdateSetting(key: string, value: string) {
     try {
       setSaveStatus(null)
-      await axios.post(`http://localhost:3001/api/settings/${key}`, { value })
+      await axios.post(`http://localhost:3000/api/settings/${key}`, { value })
       setSaveStatus(`${key} updated successfully`)
       setTimeout(() => setSaveStatus(null), 3000)
       setSettings((prev) => ({
