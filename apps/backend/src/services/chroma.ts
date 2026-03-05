@@ -49,4 +49,24 @@ export class ChromaClient {
   async deleteCollection(collectionId: string): Promise<void> {
     await this.req(`${this.apiBase}/collections/${collectionId}`, { method: 'DELETE' });
   }
+
+  async query(
+    collectionId: string,
+    embedding: number[],
+    nResults: number
+  ): Promise<{
+    ids: string[][];
+    documents: (string | null)[][];
+    metadatas: (Record<string, string | number> | null)[][];
+    distances: number[][];
+  }> {
+    return this.req(`${this.apiBase}/collections/${collectionId}/query`, {
+      method: 'POST',
+      body: JSON.stringify({
+        query_embeddings: [embedding],
+        n_results: nResults,
+        include: ['documents', 'metadatas', 'distances'],
+      }),
+    });
+  }
 }

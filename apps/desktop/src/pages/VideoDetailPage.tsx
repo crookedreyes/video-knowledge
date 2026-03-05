@@ -9,6 +9,7 @@ import { TagEditor } from '@/components/TagEditor'
 import { Button } from '@/components/ui/button'
 import { ChevronRight, Trash2, MessageSquare, FileText } from 'lucide-react'
 import { toast } from 'sonner'
+import { ChatPanel } from '@/components/ChatPanel'
 
 interface Segment {
   id: string
@@ -230,23 +231,25 @@ export function VideoDetailPage() {
             </button>
           </div>
 
-          {/* Tab content */}
-          <div className="flex-1 overflow-hidden">
-            {activeTab === 'transcript' ? (
+          {/* Tab content — both rendered, toggled via CSS for state persistence */}
+          <div className="flex-1 overflow-hidden relative">
+            <div className={`absolute inset-0 ${activeTab === 'transcript' ? '' : 'hidden'}`}>
               <TranscriptView
                 segments={video.segments}
                 chapters={video.chapters}
                 currentTime={currentTime}
                 onSeek={handleSeek}
               />
-            ) : (
-              <div className="flex items-center justify-center h-full text-slate-400">
-                <div className="text-center">
-                  <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Chat coming in Phase 4</p>
-                </div>
-              </div>
-            )}
+            </div>
+            <div className={`absolute inset-0 ${activeTab === 'chat' ? '' : 'hidden'}`}>
+              <ChatPanel
+                videoScope={{
+                  videoId: video.id,
+                  videoTitle: video.title,
+                  onSeek: handleSeek,
+                }}
+              />
+            </div>
           </div>
         </div>
       </div>
