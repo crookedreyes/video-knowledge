@@ -114,9 +114,15 @@ export async function embedStep(ctx: PipelineContext): Promise<void> {
   const chromaPort = ctx.config.get<number>('chroma.port') ?? 8000;
   const chroma = new ChromaClient(chromaPort);
 
-  // Recreate collection (idempotent via get_or_create)
-  const collectionName = `video-${youtubeId}`;
-  const collectionId = await chroma.getOrCreateCollection(collectionName);
+  // Use a single global collection for all videos (enables cross-video search)
+  const collectionId = await chroma.getOrCreateCollection('video_transcripts');
+
+  // Delete stale chunks for this video before re-inserting (idempotent re-embed)
+  try {
+    await chroma.deleteWhere(collectionId, { videoId: ctx.videoId });
+  } catch {
+    // Collection may be empty — ignore
+  }
 
   // Embed in batches of 32
   const BATCH = 32;
