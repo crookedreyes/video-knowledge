@@ -5,6 +5,7 @@ import { apiGet, apiPatch, apiDelete, type ApiResponse } from '@/lib/api'
 import { VideoPlayer, type VideoPlayerHandle } from '@/components/VideoPlayer'
 import { TranscriptView } from '@/components/TranscriptView'
 import { SummaryPanel } from '@/components/SummaryPanel'
+import { TagEditor } from '@/components/TagEditor'
 import { Button } from '@/components/ui/button'
 import { ChevronRight, Trash2, MessageSquare, FileText } from 'lucide-react'
 import { toast } from 'sonner'
@@ -154,24 +155,8 @@ export function VideoDetailPage() {
             </p>
           </div>
 
-          {/* Tags */}
-          {video.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {video.tags.map((tag) => (
-                <span
-                  key={tag.id}
-                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                  style={{
-                    backgroundColor: tag.color + '20',
-                    color: tag.color,
-                    border: `1px solid ${tag.color}40`,
-                  }}
-                >
-                  {tag.name}
-                </span>
-              ))}
-            </div>
-          )}
+          {/* Tag Editor */}
+          {id && <TagEditor videoId={id} />}
 
           {/* Summary */}
           <SummaryPanel
