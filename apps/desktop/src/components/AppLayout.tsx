@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom'
 import { AppSidebar } from './AppSidebar'
+import { IngestionProgress } from './IngestionProgress'
 import { useSettings } from '@/hooks/useSettings'
 import { useEffect } from 'react'
 
@@ -43,6 +44,9 @@ export function AppLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Ingestion progress overlay — renders when videos are being processed */}
+      <IngestionProgress />
     </div>
   )
 }
