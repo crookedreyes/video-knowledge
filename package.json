@@ -3,6 +3,11 @@
   "version": "0.0.1",
   "type": "module",
   "private": true,
+  "workspaces": [
+    "apps/desktop",
+    "apps/backend",
+    "packages/shared"
+  ],
   "scripts": {
     "dev": "bun run dev:workspace",
     "dev:workspace": "bun run --cwd apps/backend dev & bun run --cwd apps/desktop tauri dev",
