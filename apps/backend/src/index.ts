@@ -2,6 +2,8 @@ import { Hono } from 'hono';
 import { logger } from 'hono/logger';
 import { cors } from 'hono/cors';
 import { getDb } from './db/index.js';
+import { ConfigService } from './services/config.js';
+import { settingsRouter } from './routes/settings.js';
 
 // Simple logger
 const pinoLogger = {
@@ -16,7 +18,7 @@ const pinoLogger = {
 };
 
 // Create Hono app
-const app = new Hono();
+const app = new Hono<{ Variables: { db: Awaited<ReturnType<typeof getDb>>; configService: ConfigService } }>();
 
 // CORS middleware - allow requests from Tauri webview
 app.use(
@@ -70,8 +72,6 @@ app.get('/api/health', (c) => {
   });
 });
 
-// Routes will be added as features are implemented
-
 // 404 handler
 app.notFound((c) => {
   return c.json(
@@ -91,11 +91,20 @@ app.notFound((c) => {
 const db = await getDb();
 pinoLogger.info('Database initialized successfully');
 
-// Attach db to context for use in routes
+// Initialize config service
+const configService = new ConfigService(db);
+await configService.initialize();
+pinoLogger.info('Config service initialized successfully');
+
+// Attach db and configService to context for use in routes
 app.use(async (c, next) => {
   c.set('db', db);
+  c.set('configService', configService);
   await next();
 });
+
+// Settings routes
+app.route('/api/settings', settingsRouter);
 
 const PORT = parseInt(process.env.PORT || '3456', 10);
 const HOST = process.env.HOST || 'localhost';

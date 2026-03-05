@@ -6,7 +6,8 @@
   "type": "module",
   "workspaces": [
     "apps/desktop",
-    "apps/backend"
+    "apps/backend",
+    "packages/shared"
   ],
   "scripts": {
     "dev:desktop": "bun --cwd apps/desktop run dev",
