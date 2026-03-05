@@ -3,7 +3,11 @@ import { logger } from 'hono/logger';
 import { cors } from 'hono/cors';
 import { getDb } from './db/index.js';
 import { ConfigService } from './services/config.js';
+import { OpenAIClientManager } from './services/openai-client.js';
+import { LLMService } from './services/llm.js';
+import { EmbeddingService } from './services/embedding.js';
 import { settingsRouter } from './routes/settings.js';
+import { healthRouter } from './routes/health.js';
 
 // Simple logger
 const pinoLogger = {
@@ -18,7 +22,15 @@ const pinoLogger = {
 };
 
 // Create Hono app
-const app = new Hono<{ Variables: { db: Awaited<ReturnType<typeof getDb>>; configService: ConfigService } }>();
+const app = new Hono<{
+  Variables: {
+    db: Awaited<ReturnType<typeof getDb>>;
+    configService: ConfigService;
+    openAIClientManager: OpenAIClientManager;
+    llmService: LLMService;
+    embeddingService: EmbeddingService;
+  };
+}>();
 
 // CORS middleware - allow requests from Tauri webview
 app.use(
@@ -96,15 +108,27 @@ const configService = new ConfigService(db);
 await configService.initialize();
 pinoLogger.info('Config service initialized successfully');
 
-// Attach db and configService to context for use in routes
+// Initialize OpenAI client manager and dependent services
+const openAIClientManager = new OpenAIClientManager(configService);
+const llmService = new LLMService(openAIClientManager, configService);
+const embeddingService = new EmbeddingService(openAIClientManager, configService);
+pinoLogger.info('LLM services initialized successfully');
+
+// Attach services to context for use in routes
 app.use(async (c, next) => {
   c.set('db', db);
   c.set('configService', configService);
+  c.set('openAIClientManager', openAIClientManager);
+  c.set('llmService', llmService);
+  c.set('embeddingService', embeddingService);
   await next();
 });
 
 // Settings routes
 app.route('/api/settings', settingsRouter);
+
+// Health routes
+app.route('/api/health', healthRouter);
 
 const PORT = parseInt(process.env.PORT || '3456', 10);
 const HOST = process.env.HOST || 'localhost';
