@@ -4,6 +4,9 @@ import { cors } from 'hono/cors';
 import { getDb } from './db/index.js';
 import { ConfigService } from './services/config.js';
 import { settingsRouter } from './routes/settings.js';
+import { ingestRouter } from './routes/ingest.js';
+import { videosRouter } from './routes/videos.js';
+import { PipelineOrchestrator } from './services/pipeline/orchestrator.js';
 
 // Simple logger
 const pinoLogger = {
@@ -18,7 +21,13 @@ const pinoLogger = {
 };
 
 // Create Hono app
-const app = new Hono<{ Variables: { db: Awaited<ReturnType<typeof getDb>>; configService: ConfigService } }>();
+const app = new Hono<{
+  Variables: {
+    db: Awaited<ReturnType<typeof getDb>>;
+    configService: ConfigService;
+    pipeline: PipelineOrchestrator;
+  };
+}>();
 
 // CORS middleware - allow requests from Tauri webview
 app.use(
@@ -54,7 +63,7 @@ app.onError((err, c) => {
   };
 
   // Determine status code
-  let status = 500;
+  let status: 500 | 404 | 400 = 500;
   if (err.message.includes('not found')) {
     status = 404;
   } else if (err.message.includes('validation')) {
@@ -96,15 +105,26 @@ const configService = new ConfigService(db);
 await configService.initialize();
 pinoLogger.info('Config service initialized successfully');
 
-// Attach db and configService to context for use in routes
+// Initialize pipeline orchestrator
+const pipeline = new PipelineOrchestrator(db, configService);
+pinoLogger.info('Pipeline orchestrator initialized');
+
+// Attach db, configService, and pipeline to context for use in routes
 app.use(async (c, next) => {
   c.set('db', db);
   c.set('configService', configService);
+  c.set('pipeline', pipeline);
   await next();
 });
 
 // Settings routes
 app.route('/api/settings', settingsRouter);
+
+// Ingest routes (pipeline start + SSE)
+app.route('/api/ingest', ingestRouter);
+
+// Videos routes
+app.route('/api/videos', videosRouter);
 
 const PORT = parseInt(process.env.PORT || '3456', 10);
 const HOST = process.env.HOST || 'localhost';
