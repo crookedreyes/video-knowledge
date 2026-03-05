@@ -3,6 +3,7 @@ import { logger } from 'hono/logger';
 import { cors } from 'hono/cors';
 import { getDb } from './db/index.js';
 import { ConfigService } from './services/config.js';
+import { TranscriptionService } from './services/transcription.js';
 import { settingsRouter } from './routes/settings.js';
 
 // Simple logger
@@ -18,7 +19,7 @@ const pinoLogger = {
 };
 
 // Create Hono app
-const app = new Hono<{ Variables: { db: Awaited<ReturnType<typeof getDb>>; configService: ConfigService } }>();
+const app = new Hono<{ Variables: { db: Awaited<ReturnType<typeof getDb>>; configService: ConfigService; transcriptionService: TranscriptionService } }>();
 
 // CORS middleware - allow requests from Tauri webview
 app.use(
@@ -96,10 +97,15 @@ const configService = new ConfigService(db);
 await configService.initialize();
 pinoLogger.info('Config service initialized successfully');
 
-// Attach db and configService to context for use in routes
+// Initialize transcription service
+const transcriptionService = new TranscriptionService(db);
+pinoLogger.info('Transcription service initialized successfully');
+
+// Attach db and services to context for use in routes
 app.use(async (c, next) => {
   c.set('db', db);
   c.set('configService', configService);
+  c.set('transcriptionService', transcriptionService);
   await next();
 });
 
