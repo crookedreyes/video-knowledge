@@ -16,6 +16,7 @@ import { ingestRouter } from './routes/ingest.js';
 import { videosRouter } from './routes/videos.js';
 import { tagsRouter } from './routes/tags.js';
 import { filesRouter } from './routes/files.js';
+import { searchRouter } from './routes/search.js';
 import { PipelineOrchestrator } from './services/pipeline/orchestrator.js';
 
 const pinoLogger = {
@@ -54,7 +55,7 @@ app.use(logger());
 
 app.onError((err, c) => {
   pinoLogger.error({ error: err, context: c.req.path }, 'Request error');
-  let status = 500;
+  let status: 400 | 404 | 500 = 500;
   if (err.message.includes('not found')) status = 404;
   else if (err.message.includes('validation')) status = 400;
   return c.json({ success: false, error: { message: err.message || 'Internal server error', status: 'error', timestamp: new Date().toISOString() } }, status);
@@ -92,7 +93,7 @@ pinoLogger.info('LLM services initialized successfully');
 const transcriptionService = new TranscriptionService(db);
 pinoLogger.info('Transcription service initialized successfully');
 
-const vectorStoreService = new VectorStoreService(embeddingService, configService);
+const vectorStoreService = new VectorStoreService(null, configService);
 pinoLogger.info('VectorStore service initialized successfully');
 
 const pipeline = new PipelineOrchestrator(db, configService);
@@ -119,6 +120,7 @@ app.route('/api/ingest', ingestRouter);
 app.route('/api/videos', videosRouter);
 app.route('/api/tags', tagsRouter);
 app.route('/api/files', filesRouter);
+app.route('/api/search', searchRouter);
 
 app.get('/api/health/docker', async (c) => {
   const status = await dockerManager.getStatus();
