@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { CitationLink, type Citation } from './CitationLink'
@@ -24,7 +25,7 @@ function renderContentWithCitations(
   citations: Citation[],
   currentVideoId: string | undefined,
   onSeek: ((time: number) => void) | undefined
-): React.ReactNode[] {
+): ReactNode[] {
   if (citations.length === 0) return [content]
 
   const parts = content.split(/(\[\d+\])/g)
