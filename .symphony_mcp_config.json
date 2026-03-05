@@ -3,7 +3,7 @@
     "symphony": {
       "args": [
         "-c",
-        "exec 3<>/dev/tcp/127.0.0.1/43301; cat <&3 & cat >&3; wait"
+        "exec 3<>/dev/tcp/127.0.0.1/33751; cat <&3 & cat >&3; wait"
       ],
       "command": "bash"
     }
