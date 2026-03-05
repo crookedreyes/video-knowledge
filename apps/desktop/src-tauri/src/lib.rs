@@ -1,6 +1,6 @@
 #[tauri::command]
 fn greet(name: &str) -> String {
-    format!("Hello, {}! Welcome to Video Knowledge.", name)
+    format!("Hello, {}! Welcome to Tauri.", name)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
