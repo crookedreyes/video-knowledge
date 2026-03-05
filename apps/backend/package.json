@@ -12,14 +12,15 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@vide-know/shared": "workspace:*",
-    "hono": "^4.0.0",
     "@hono/zod-validator": "^0.2.0",
-    "zod": "^3.22.0",
+    "@vide-know/shared": "workspace:*",
+    "better-sqlite3": "^9.2.0",
+    "chromadb": "^3.3.1",
+    "drizzle-orm": "^0.30.0",
+    "hono": "^4.0.0",
     "pino": "^8.17.0",
     "ulid": "^2.3.0",
-    "drizzle-orm": "^0.30.0",
-    "better-sqlite3": "^9.2.0"
+    "zod": "^3.22.0"
   },
   "devDependencies": {
     "drizzle-kit": "^0.20.0",

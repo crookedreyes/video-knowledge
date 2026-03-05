@@ -3,6 +3,8 @@ import { logger } from 'hono/logger';
 import { cors } from 'hono/cors';
 import { getDb } from './db/index.js';
 import { ConfigService } from './services/config.js';
+import { EmbeddingService } from './services/embedding.js';
+import { VectorStoreService } from './services/vectorStore.js';
 import { settingsRouter } from './routes/settings.js';
 
 // Simple logger
@@ -18,7 +20,13 @@ const pinoLogger = {
 };
 
 // Create Hono app
-const app = new Hono<{ Variables: { db: Awaited<ReturnType<typeof getDb>>; configService: ConfigService } }>();
+const app = new Hono<{
+  Variables: {
+    db: Awaited<ReturnType<typeof getDb>>;
+    configService: ConfigService;
+    vectorStoreService: VectorStoreService;
+  };
+}>();
 
 // CORS middleware - allow requests from Tauri webview
 app.use(
@@ -96,10 +104,30 @@ const configService = new ConfigService(db);
 await configService.initialize();
 pinoLogger.info('Config service initialized successfully');
 
+// Initialize embedding service
+const embeddingService = new EmbeddingService({
+  baseUrl: configService.get<string>('llm.baseUrl') ?? 'http://localhost:1234/v1',
+  apiKey: configService.get<string>('llm.apiKey') ?? '',
+  model: configService.get<string>('llm.embeddingModel') ?? 'qwen3-embedding',
+});
+
+// Initialize vector store service
+const chromaPort = configService.get<number>('chroma.port') ?? 8000;
+const vectorStoreService = new VectorStoreService(
+  db,
+  embeddingService,
+  `http://localhost:${chromaPort}`,
+  configService.get<number>('rag.chunkSize') ?? 400,
+  configService.get<number>('rag.chunkOverlap') ?? 50
+);
+await vectorStoreService.initialize();
+pinoLogger.info('Vector store service initialized successfully');
+
 // Attach db and configService to context for use in routes
 app.use(async (c, next) => {
   c.set('db', db);
   c.set('configService', configService);
+  c.set('vectorStoreService', vectorStoreService);
   await next();
 });
 
