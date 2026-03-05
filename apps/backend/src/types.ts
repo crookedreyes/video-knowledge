@@ -1,7 +1,7 @@
 export interface HealthResponse {
-  status: "healthy" | "unhealthy";
+  status: "ok";
   timestamp: string;
-  version: string;
+  version?: string;
 }
 
 export interface SettingsResponse {
