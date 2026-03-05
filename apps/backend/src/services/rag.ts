@@ -18,6 +18,7 @@ export interface RetrievedChunk {
 }
 
 export interface Citation {
+  index: number;
   videoId: string;
   videoTitle: string;
   startTime: number;
@@ -135,6 +136,7 @@ export class RAGService {
       if (!chunk) continue;
 
       citations.push({
+        index: n,
         videoId: chunk.videoId,
         videoTitle: chunk.videoTitle,
         startTime: chunk.startTime,

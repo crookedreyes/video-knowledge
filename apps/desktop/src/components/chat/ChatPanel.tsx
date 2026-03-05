@@ -25,21 +25,35 @@ import {
 import { useVideos } from '@/hooks/useVideos'
 import { cn } from '@/lib/utils'
 
-interface ChatPanelProps {
-  sessionId?: string
+export interface VideoScope {
+  videoId: string
+  videoTitle: string
+  onSeek?: (time: number) => void
 }
 
-export function ChatPanel({ sessionId }: ChatPanelProps) {
+interface ChatPanelProps {
+  sessionId?: string
+  videoScope?: VideoScope
+}
+
+export function ChatPanel({ sessionId, videoScope }: ChatPanelProps) {
   const navigate = useNavigate()
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
+  // Video-scoped session state (lazy — created on first message)
+  const [videoSessionId, setVideoSessionId] = useState<string | undefined>()
+  const [pendingContent, setPendingContent] = useState<string | undefined>()
+
+  // Determine the active session ID
+  const activeSessionId = videoScope ? videoSessionId : sessionId
+
   // Session state
   const { data: sessions = [], isLoading: sessionsLoading } = useChatSessions()
-  const { data: currentSession } = useChatSession(sessionId)
+  const { data: currentSession } = useChatSession(activeSessionId)
   const createSession = useCreateSession()
   const deleteSession = useDeleteSession()
 
-  // Scope selector
+  // Scope selector (global mode only)
   const [scope, setScope] = useState<'global' | 'video'>('global')
   const [scopeVideoId, setScopeVideoId] = useState<string>('')
   const { videos } = useVideos()
@@ -48,7 +62,16 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
   const [deleteTarget, setDeleteTarget] = useState<ChatSession | null>(null)
 
   // Streaming
-  const { sendMessage, streamingContent, isStreaming } = useSendMessage(sessionId)
+  const { sendMessage, streamingContent, streamingCitations, isStreaming } =
+    useSendMessage(activeSessionId)
+
+  // Send pending content after video-scoped session is created
+  useEffect(() => {
+    if (pendingContent && videoSessionId) {
+      sendMessage(pendingContent)
+      setPendingContent(undefined)
+    }
+  }, [videoSessionId, pendingContent, sendMessage])
 
   // Auto-scroll on new messages or streaming
   useEffect(() => {
@@ -69,8 +92,28 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
   }
 
   async function handleSend(content: string) {
+    // Video-scoped mode: create session lazily on first message
+    if (videoScope) {
+      if (!videoSessionId) {
+        try {
+          const session = await createSession.mutateAsync({
+            title: videoScope.videoTitle,
+            scope: 'video',
+            videoId: videoScope.videoId,
+          })
+          setVideoSessionId(session.id)
+          setPendingContent(content)
+        } catch {
+          toast.error('Failed to create chat session')
+        }
+        return
+      }
+      await sendMessage(content)
+      return
+    }
+
+    // Global mode
     if (!sessionId) {
-      // Create a session first, then send
       try {
         const session = await createSession.mutateAsync({
           title: content.slice(0, 50),
@@ -78,7 +121,6 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
           videoId: scope === 'video' ? scopeVideoId : undefined,
         })
         navigate(`/chat/${session.id}`)
-        // sendMessage will be called via the new sessionId
         return
       } catch {
         toast.error('Failed to create session')
@@ -110,6 +152,68 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
 
   const messages = currentSession?.messages ?? []
 
+  // Video-scoped mode: compact inline chat without sidebar
+  if (videoScope) {
+    return (
+      <div className="flex flex-col h-full overflow-hidden">
+        <ScrollArea className="flex-1 overflow-y-auto px-4 py-4">
+          {messages.length === 0 && !isStreaming && (
+            <div className="flex items-center justify-center h-32 text-slate-400 text-sm">
+              Ask anything about "{videoScope.videoTitle}"
+            </div>
+          )}
+
+          {messages.map((msg) => (
+            <ChatMessage
+              key={msg.id}
+              message={msg}
+              currentVideoId={videoScope.videoId}
+              onSeek={videoScope.onSeek}
+            />
+          ))}
+
+          {isStreaming && streamingContent && (
+            <ChatMessage
+              message={{
+                role: 'assistant',
+                content: streamingContent,
+                isStreaming: true,
+                citations: streamingCitations,
+              }}
+              currentVideoId={videoScope.videoId}
+              onSeek={videoScope.onSeek}
+            />
+          )}
+
+          {isStreaming && !streamingContent && (
+            <div className="flex justify-start mb-4">
+              <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl rounded-tl-sm px-4 py-3">
+                <div className="flex gap-1">
+                  {[0, 1, 2].map((i) => (
+                    <span
+                      key={i}
+                      className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500 animate-bounce"
+                      style={{ animationDelay: `${i * 0.15}s` }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </ScrollArea>
+
+        <ChatInput
+          onSend={handleSend}
+          disabled={isStreaming || createSession.isPending}
+          placeholder="Ask a question about this video…"
+        />
+      </div>
+    )
+  }
+
+  // Global mode: full chat panel with sidebar
   return (
     <div className="flex h-full overflow-hidden">
       {/* Sidebar */}
@@ -227,6 +331,7 @@ export function ChatPanel({ sessionId }: ChatPanelProps) {
                   role: 'assistant',
                   content: streamingContent,
                   isStreaming: true,
+                  citations: streamingCitations,
                 }}
               />
             )}
