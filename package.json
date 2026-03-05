@@ -9,6 +9,7 @@
     "build": "bun run --cwd apps/desktop tauri build"
   },
   "devDependencies": {
+    "@types/node": "^25.3.3",
     "typescript": "^5.3.3"
   }
 }
