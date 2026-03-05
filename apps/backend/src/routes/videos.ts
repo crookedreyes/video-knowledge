@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 import { videos, transcriptSegments, tags, videoTags } from '../db/schema.js';
 import type { ConfigService } from '../services/config.js';
 import type { PipelineOrchestrator } from '../services/pipeline/orchestrator.js';
@@ -68,6 +68,31 @@ videosRouter.post('/:id/retry', async (c) => {
   }
 
   return c.json({ success: true, videoId: id });
+});
+
+// POST /api/videos/:id/tags — add existing tag to video
+videosRouter.post('/:id/tags', async (c) => {
+  const db = c.get('db');
+  const videoId = c.req.param('id');
+  const { tagId } = await c.req.json<{ tagId: string }>();
+
+  await db.insert(videoTags).values({ videoId, tagId, source: 'manual' });
+
+  const [tag] = await db.select().from(tags).where(eq(tags.id, tagId)).limit(1);
+  return c.json({ success: true, data: { ...tag, source: 'manual' } });
+});
+
+// DELETE /api/videos/:id/tags/:tagId — remove tag from video
+videosRouter.delete('/:id/tags/:tagId', async (c) => {
+  const db = c.get('db');
+  const videoId = c.req.param('id');
+  const tagId = c.req.param('tagId');
+
+  await db
+    .delete(videoTags)
+    .where(and(eq(videoTags.videoId, videoId), eq(videoTags.tagId, tagId)));
+
+  return c.json({ success: true });
 });
 
 export { videosRouter };
