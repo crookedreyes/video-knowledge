@@ -1,16 +1,12 @@
 import { useParams } from 'react-router-dom'
+import { ChatPanel } from '@/components/chat/ChatPanel'
 
 export function ChatPage() {
-  const { sessionId } = useParams()
+  const { sessionId } = useParams<{ sessionId?: string }>()
 
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold mb-4">Chat</h1>
-      {sessionId ? (
-        <p className="text-slate-600 dark:text-slate-400">Chat session {sessionId} - coming soon</p>
-      ) : (
-        <p className="text-slate-600 dark:text-slate-400">Chat page - coming soon</p>
-      )}
+    <div className="h-full flex flex-col">
+      <ChatPanel sessionId={sessionId} />
     </div>
   )
 }
