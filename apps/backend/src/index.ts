@@ -7,6 +7,7 @@ import { DockerManager } from './services/docker.js';
 import { OpenAIClientManager } from './services/openai-client.js';
 import { LLMService } from './services/llm.js';
 import { EmbeddingService } from './services/embedding.js';
+import { TranscriptionService } from './services/transcription.js';
 import { settingsRouter } from './routes/settings.js';
 import { dockerSettingsRouter } from './routes/docker.js';
 import { healthRouter } from './routes/health.js';
@@ -30,6 +31,7 @@ const app = new Hono<{
     openAIClientManager: OpenAIClientManager;
     llmService: LLMService;
     embeddingService: EmbeddingService;
+    transcriptionService: TranscriptionService;
   };
 }>();
 
@@ -79,6 +81,9 @@ const llmService = new LLMService(openAIClientManager, configService);
 const embeddingService = new EmbeddingService(openAIClientManager, configService);
 pinoLogger.info('LLM services initialized successfully');
 
+const transcriptionService = new TranscriptionService(db);
+pinoLogger.info('Transcription service initialized successfully');
+
 app.use(async (c, next) => {
   c.set('db', db);
   c.set('configService', configService);
@@ -86,6 +91,7 @@ app.use(async (c, next) => {
   c.set('openAIClientManager', openAIClientManager);
   c.set('llmService', llmService);
   c.set('embeddingService', embeddingService);
+  c.set('transcriptionService', transcriptionService);
   await next();
 });
 
