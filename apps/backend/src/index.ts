@@ -4,6 +4,7 @@ import { cors } from 'hono/cors';
 import { getDb } from './db/index.js';
 import { ConfigService } from './services/config.js';
 import { settingsRouter } from './routes/settings.js';
+import { videosRouter } from './routes/videos.js';
 
 // Simple logger
 const pinoLogger = {
@@ -105,6 +106,9 @@ app.use(async (c, next) => {
 
 // Settings routes
 app.route('/api/settings', settingsRouter);
+
+// Videos routes
+app.route('/api/videos', videosRouter);
 
 const PORT = parseInt(process.env.PORT || '3456', 10);
 const HOST = process.env.HOST || 'localhost';

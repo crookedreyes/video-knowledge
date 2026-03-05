@@ -1,3 +1,4 @@
+import * as React from 'react'
 import { useLocation, Link } from 'react-router-dom'
 import {
   Sidebar,
@@ -10,9 +11,11 @@ import {
   SidebarToggle,
 } from '@/components/ui/sidebar'
 import { Library, Search, MessageSquare, Tag, Settings, Plus } from 'lucide-react'
+import { AddVideoDialog } from '@/components/AddVideoDialog'
 
 export function AppSidebar() {
   const location = useLocation()
+  const [addVideoOpen, setAddVideoOpen] = React.useState(false)
 
   const isActive = (path: string) => location.pathname.startsWith(path)
 
@@ -24,49 +27,57 @@ export function AppSidebar() {
   ]
 
   return (
-    <Sidebar className="border-r border-slate-700">
-      <SidebarHeader>
-        <h1 className="text-lg font-bold">VideóKnow</h1>
-        <SidebarToggle />
-      </SidebarHeader>
+    <>
+      <Sidebar className="border-r border-slate-700">
+        <SidebarHeader>
+          <h1 className="text-lg font-bold">VideóKnow</h1>
+          <SidebarToggle />
+        </SidebarHeader>
 
-      <SidebarContent>
-        <SidebarMenu>
-          {menuItems.map((item) => (
-            <SidebarMenuItem key={item.path}>
-              <Link to={item.path} className="w-full">
+        <SidebarContent>
+          <SidebarMenu>
+            {menuItems.map((item) => (
+              <SidebarMenuItem key={item.path}>
+                <Link to={item.path} className="w-full">
+                  <SidebarMenuButton
+                    isActive={isActive(item.path)}
+                    icon={item.icon}
+                  >
+                    {item.label}
+                  </SidebarMenuButton>
+                </Link>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarContent>
+
+        <SidebarFooter className="space-y-2">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <Link to="/settings" className="w-full">
                 <SidebarMenuButton
-                  isActive={isActive(item.path)}
-                  icon={item.icon}
+                  isActive={isActive('/settings')}
+                  icon={<Settings size={20} />}
                 >
-                  {item.label}
+                  Settings
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
-      </SidebarContent>
-
-      <SidebarFooter className="space-y-2">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <Link to="/settings" className="w-full">
+            <SidebarMenuItem>
               <SidebarMenuButton
-                isActive={isActive('/settings')}
-                icon={<Settings size={20} />}
+                className="bg-slate-700 hover:bg-slate-600 text-slate-50"
+                onClick={() => setAddVideoOpen(true)}
+                aria-label="Add video"
               >
-                Settings
+                <Plus size={20} />
+                <span>Add Video</span>
               </SidebarMenuButton>
-            </Link>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton className="bg-slate-700 hover:bg-slate-600 text-slate-50">
-              <Plus size={20} />
-              <span>Add Video</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
-    </Sidebar>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+      </Sidebar>
+
+      <AddVideoDialog open={addVideoOpen} onClose={() => setAddVideoOpen(false)} />
+    </>
   )
 }
