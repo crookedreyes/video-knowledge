@@ -1,8 +1,8 @@
 import { homedir, platform } from "os";
 import { join } from "path";
 import { mkdirSync } from "fs";
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
+import { Database } from "bun:sqlite";
+import { drizzle } from "drizzle-orm/bun-sqlite";
 import * as schema from "./schema";
 
 export function getDataDir(): string {
@@ -29,6 +29,16 @@ export function initializeDb() {
   // Initialize database connection
   const sqlite = new Database(dbPath);
   const db = drizzle(sqlite, { schema });
+
+  // Create tables if they don't exist
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      createdAt INTEGER DEFAULT (cast(strftime('%s', 'now') * 1000 as integer)),
+      updatedAt INTEGER DEFAULT (cast(strftime('%s', 'now') * 1000 as integer))
+    );
+  `);
 
   console.log(`Database initialized at ${dbPath}`);
 
