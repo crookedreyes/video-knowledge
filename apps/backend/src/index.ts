@@ -15,6 +15,7 @@ import { healthRouter } from './routes/health.js';
 import { ingestRouter } from './routes/ingest.js';
 import { videosRouter } from './routes/videos.js';
 import { tagsRouter } from './routes/tags.js';
+import { filesRouter } from './routes/files.js';
 import { PipelineOrchestrator } from './services/pipeline/orchestrator.js';
 
 const pinoLogger = {
@@ -117,6 +118,7 @@ app.route('/api/health', healthRouter);
 app.route('/api/ingest', ingestRouter);
 app.route('/api/videos', videosRouter);
 app.route('/api/tags', tagsRouter);
+app.route('/api/files', filesRouter);
 
 app.get('/api/health/docker', async (c) => {
   const status = await dockerManager.getStatus();
