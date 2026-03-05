@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { apiGet, apiPut, apiPost, apiDelete } from '@/lib/api'
+import { apiGet, apiPatch, apiPost, apiDelete } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
@@ -69,6 +69,7 @@ interface VideoDetail {
   createdAt: string
   updatedAt: string
   segments: TranscriptSegment[]
+  chapters: Chapter[]
   tags: VideoTag[]
 }
 
@@ -149,7 +150,7 @@ function SummaryPanel({ video }: { video: VideoDetail }) {
 
   const saveMutation = useMutation({
     mutationFn: (summary: string) =>
-      apiPut(`/videos/${video.id}/summary`, { summary }),
+      apiPatch(`/videos/${video.id}`, { summary }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['video', video.id] })
       setEditing(false)
@@ -477,12 +478,6 @@ export function VideoDetailPage() {
     enabled: !!id,
   })
 
-  const { data: chaptersData } = useQuery({
-    queryKey: ['chapters', id],
-    queryFn: () => apiGet<{ success: boolean; data: Chapter[] }>(`/videos/${id}/chapters`),
-    enabled: !!id,
-  })
-
   const deleteMutation = useMutation({
     mutationFn: () => apiDelete(`/videos/${id}`),
     onSuccess: () => {
@@ -524,7 +519,7 @@ export function VideoDetailPage() {
   }
 
   const video = data.data
-  const chapters = chaptersData?.data || []
+  const chapters = video.chapters || []
 
   return (
     <div className="flex h-full flex-col">
