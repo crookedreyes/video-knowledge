@@ -185,7 +185,7 @@ export class TranscriptionService extends EventEmitter {
       let proc: ReturnType<typeof spawn>;
 
       try {
-        proc = spawn('whisper-cpp', args, { stdio: ['ignore', 'pipe', 'pipe'] });
+        proc = spawn('whisper-cli', args, { stdio: ['ignore', 'pipe', 'pipe'] });
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         reject(new Error(`whisper-cpp binary not found or failed to start: ${msg}`));

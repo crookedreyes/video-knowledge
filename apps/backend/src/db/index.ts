@@ -36,7 +36,99 @@ async function initializeDatabase(): Promise<Database> {
   const sqlite = new Database(DB_PATH);
 
   // Enable foreign keys for cascade deletes
-  sqlite.exec('PRAGMA foreign_keys = ON;');
+  sqlite.run('PRAGMA foreign_keys = ON;');
+
+  // Auto-create tables if they don't exist
+  sqlite.run(`
+    CREATE TABLE IF NOT EXISTS videos (
+      id TEXT PRIMARY KEY,
+      youtube_id TEXT NOT NULL UNIQUE,
+      url TEXT NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT,
+      channel_name TEXT NOT NULL,
+      channel_id TEXT NOT NULL,
+      duration INTEGER NOT NULL,
+      published_at TEXT,
+      thumbnail_path TEXT,
+      video_path TEXT,
+      audio_path TEXT,
+      summary TEXT,
+      status TEXT NOT NULL DEFAULT 'pending',
+      error_message TEXT,
+      chroma_collection_id TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  sqlite.run(`
+    CREATE TABLE IF NOT EXISTS transcript_segments (
+      id TEXT PRIMARY KEY,
+      video_id TEXT NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
+      start_time REAL NOT NULL,
+      end_time REAL NOT NULL,
+      text TEXT NOT NULL,
+      language TEXT NOT NULL,
+      segment_index INTEGER NOT NULL
+    )
+  `);
+  sqlite.run('CREATE INDEX IF NOT EXISTS transcript_segments_video_id_idx ON transcript_segments(video_id)');
+  sqlite.run(`
+    CREATE TABLE IF NOT EXISTS chapters (
+      id TEXT PRIMARY KEY,
+      video_id TEXT NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      start_time REAL NOT NULL,
+      end_time REAL NOT NULL,
+      chapter_index INTEGER NOT NULL
+    )
+  `);
+  sqlite.run('CREATE INDEX IF NOT EXISTS chapters_video_id_idx ON chapters(video_id)');
+  sqlite.run(`
+    CREATE TABLE IF NOT EXISTS tags (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL UNIQUE,
+      color TEXT NOT NULL DEFAULT '#000000',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  sqlite.run(`
+    CREATE TABLE IF NOT EXISTS video_tags (
+      video_id TEXT NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
+      tag_id TEXT NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+      source TEXT NOT NULL DEFAULT 'manual',
+      PRIMARY KEY (video_id, tag_id)
+    )
+  `);
+  sqlite.run(`
+    CREATE TABLE IF NOT EXISTS chat_sessions (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      scope TEXT NOT NULL DEFAULT 'global',
+      video_id TEXT REFERENCES videos(id) ON DELETE SET NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  sqlite.run('CREATE INDEX IF NOT EXISTS chat_sessions_video_id_idx ON chat_sessions(video_id)');
+  sqlite.run(`
+    CREATE TABLE IF NOT EXISTS chat_messages (
+      id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
+      role TEXT NOT NULL,
+      content TEXT NOT NULL,
+      citations TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  sqlite.run('CREATE INDEX IF NOT EXISTS chat_messages_session_id_idx ON chat_messages(session_id)');
+  sqlite.run(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 
   return sqlite;
 }

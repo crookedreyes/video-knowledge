@@ -125,4 +125,8 @@ const PORT = parseInt(process.env.PORT || '3456', 10);
 const HOST = process.env.HOST || 'localhost';
 pinoLogger.info(`Starting server on ${HOST}:${PORT}`);
 
-export default app;
+Bun.serve({
+  hostname: HOST,
+  port: PORT,
+  fetch: app.fetch,
+});

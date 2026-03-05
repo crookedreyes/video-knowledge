@@ -65,8 +65,8 @@ export async function tagStep(ctx: PipelineContext): Promise<void> {
   const llm = new LLMClient({
     baseUrl: ctx.config.get<string>('llm.baseUrl') ?? 'http://localhost:1234/v1',
     apiKey: ctx.config.get<string>('llm.apiKey') ?? '',
-    chatModel: ctx.config.get<string>('llm.chatModel') ?? 'qwen3.5',
-    embeddingModel: ctx.config.get<string>('llm.embeddingModel') ?? 'qwen3-embedding',
+    chatModel: ctx.config.get<string>('llm.chatModel') ?? 'qwen3.5-4b',
+    embeddingModel: ctx.config.get<string>('llm.embeddingModel') ?? 'text-embedding-qwen3-embedding-0.6b',
     temperature: ctx.config.get<number>('llm.temperature') ?? 0.7,
     maxTokens: ctx.config.get<number>('llm.maxTokens') ?? 4096,
   });

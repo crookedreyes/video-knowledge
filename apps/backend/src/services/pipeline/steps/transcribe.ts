@@ -78,7 +78,7 @@ export async function transcribeStep(ctx: PipelineContext): Promise<void> {
   ];
   if (language !== 'auto') whisperArgs.push('-l', language);
 
-  const proc = Bun.spawn(['whisper', ...whisperArgs], { stdout: 'pipe', stderr: 'pipe' });
+  const proc = Bun.spawn(['whisper-cli', ...whisperArgs], { stdout: 'pipe', stderr: 'pipe' });
   const [, stderr] = await Promise.all([
     new Response(proc.stdout).text(),
     new Response(proc.stderr).text(),

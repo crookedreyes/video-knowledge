@@ -11,11 +11,11 @@
   ],
   "scripts": {
     "dev:desktop": "bun --cwd apps/desktop run dev",
-    "dev:backend": "bun --cwd apps/backend run dev",
+    "dev:backend": "cd apps/backend && bun run dev",
     "build:desktop": "bun --cwd apps/desktop run build",
     "build:backend": "bun --cwd apps/backend run build",
-    "db:push": "bun --cwd apps/backend run db:push",
-    "db:generate": "bun --cwd apps/backend run db:generate"
+    "db:push": "cd apps/backend && bun run db:push",
+    "db:generate": "cd apps/backend && bun run db:generate"
   },
   "dependencies": {},
   "devDependencies": {}
