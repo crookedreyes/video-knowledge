@@ -4,10 +4,13 @@ import { cors } from 'hono/cors';
 import { getDb } from './db/index.js';
 import { ConfigService } from './services/config.js';
 import { DockerManager } from './services/docker.js';
+import { OpenAIClientManager } from './services/openai-client.js';
+import { LLMService } from './services/llm.js';
+import { EmbeddingService } from './services/embedding.js';
 import { settingsRouter } from './routes/settings.js';
 import { dockerSettingsRouter } from './routes/docker.js';
+import { healthRouter } from './routes/health.js';
 
-// Simple logger
 const pinoLogger = {
   info: (msg: string | object, data?: string | object) => {
     const output = typeof msg === 'string' ? `[INFO] ${msg}` : `[INFO] ${JSON.stringify(msg)}`;
@@ -19,86 +22,45 @@ const pinoLogger = {
   child: () => pinoLogger,
 };
 
-// Create Hono app
-const app = new Hono<{ Variables: { db: Awaited<ReturnType<typeof getDb>>; configService: ConfigService; dockerManager: DockerManager } }>();
+const app = new Hono<{
+  Variables: {
+    db: Awaited<ReturnType<typeof getDb>>;
+    configService: ConfigService;
+    dockerManager: DockerManager;
+    openAIClientManager: OpenAIClientManager;
+    llmService: LLMService;
+    embeddingService: EmbeddingService;
+  };
+}>();
 
-// CORS middleware - allow requests from Tauri webview
-app.use(
-  cors({
-    origin: [
-      'http://localhost:5173', // Vite dev server
-      'http://localhost:3456', // Backend
-      'tauri://localhost', // Tauri webview
-    ],
-    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
-  })
-);
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://localhost:3456', 'tauri://localhost'],
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+}));
 
-// Request logging middleware
 app.use(logger());
 
-// Global error handler middleware
 app.onError((err, c) => {
-  pinoLogger.error(
-    { error: err, context: c.req.path },
-    'Request error'
-  );
-
-  const errorResponse = {
-    success: false,
-    error: {
-      message: err.message || 'Internal server error',
-      status: 'error',
-      timestamp: new Date().toISOString(),
-    },
-  };
-
-  // Determine status code
+  pinoLogger.error({ error: err, context: c.req.path }, 'Request error');
   let status = 500;
-  if (err.message.includes('not found')) {
-    status = 404;
-  } else if (err.message.includes('validation')) {
-    status = 400;
-  }
-
-  return c.json(errorResponse, status);
+  if (err.message.includes('not found')) status = 404;
+  else if (err.message.includes('validation')) status = 400;
+  return c.json({ success: false, error: { message: err.message || 'Internal server error', status: 'error', timestamp: new Date().toISOString() } }, status);
 });
 
-// Health check endpoint
-app.get('/api/health', (c) => {
-  return c.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-  });
-});
+app.get('/api/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
-// 404 handler
-app.notFound((c) => {
-  return c.json(
-    {
-      success: false,
-      error: {
-        message: 'Route not found',
-        status: 'not_found',
-        timestamp: new Date().toISOString(),
-      },
-    },
-    404
-  );
-});
+app.notFound((c) => c.json({ success: false, error: { message: 'Route not found', status: 'not_found', timestamp: new Date().toISOString() } }, 404));
 
-// Initialize database
 const db = await getDb();
 pinoLogger.info('Database initialized successfully');
 
-// Initialize config service
 const configService = new ConfigService(db);
 await configService.initialize();
 pinoLogger.info('Config service initialized successfully');
 
-// Initialize Docker manager with settings
 const dockerManager = new DockerManager({
   socketPath: configService.get<string>('docker.socketPath'),
   port: configService.get<number>('chroma.port'),
@@ -106,28 +68,31 @@ const dockerManager = new DockerManager({
   dataPath: configService.get<string>('paths.data'),
 });
 
-// Start ChromaDB container in background — non-fatal if Docker unavailable
 dockerManager.ensureRunning().then(() => {
   pinoLogger.info('ChromaDB container is running');
 }).catch((err: Error) => {
   pinoLogger.error(err, 'ChromaDB container failed to start');
 });
 
-// Attach db, configService, and dockerManager to context for use in routes
+const openAIClientManager = new OpenAIClientManager(configService);
+const llmService = new LLMService(openAIClientManager, configService);
+const embeddingService = new EmbeddingService(openAIClientManager, configService);
+pinoLogger.info('LLM services initialized successfully');
+
 app.use(async (c, next) => {
   c.set('db', db);
   c.set('configService', configService);
   c.set('dockerManager', dockerManager);
+  c.set('openAIClientManager', openAIClientManager);
+  c.set('llmService', llmService);
+  c.set('embeddingService', embeddingService);
   await next();
 });
 
-// Settings routes
 app.route('/api/settings', settingsRouter);
-
-// Docker management routes
 app.route('/api/settings/docker', dockerSettingsRouter);
+app.route('/api/health', healthRouter);
 
-// Docker health endpoint
 app.get('/api/health/docker', async (c) => {
   const status = await dockerManager.getStatus();
   return c.json(status);
@@ -135,7 +100,6 @@ app.get('/api/health/docker', async (c) => {
 
 const PORT = parseInt(process.env.PORT || '3456', 10);
 const HOST = process.env.HOST || 'localhost';
-
 pinoLogger.info(`Starting server on ${HOST}:${PORT}`);
 
 export default app;
