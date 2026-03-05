@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "identifier": "default",
+  "description": "Capability for all Tauri core plugins",
+  "local": true,
+  "windows": ["main"],
+  "webviews": ["main"],
+  "permissions": [
+    "core:window:allow-create",
+    "core:window:allow-center",
+    "shell:allow-execute",
+    "shell:allow-kill",
+    "fs:allow-read-file",
+    "fs:allow-write-file",
+    "notification:allow-send-notification",
+    "process:allow-exit"
+  ]
+}
