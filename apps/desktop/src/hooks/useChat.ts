@@ -14,10 +14,11 @@ export interface ChatSession {
 }
 
 export interface Citation {
+  index: number
   videoId: string
   videoTitle: string
-  timestamp: number
-  index: number
+  startTime: number
+  text: string
 }
 
 export interface ChatMessage {
@@ -86,6 +87,7 @@ export function useDeleteSession() {
 export function useSendMessage(sessionId: string | undefined) {
   const queryClient = useQueryClient()
   const [streamingContent, setStreamingContent] = useState<string>('')
+  const [streamingCitations, setStreamingCitations] = useState<Citation[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
 
@@ -100,6 +102,7 @@ export function useSendMessage(sessionId: string | undefined) {
 
       setIsStreaming(true)
       setStreamingContent('')
+      setStreamingCitations([])
 
       try {
         const response = await fetch(
@@ -121,6 +124,7 @@ export function useSendMessage(sessionId: string | undefined) {
 
         const decoder = new TextDecoder()
         let buffer = ''
+        let currentEvent = ''
 
         while (true) {
           const { done, value } = await reader.read()
@@ -133,13 +137,17 @@ export function useSendMessage(sessionId: string | undefined) {
           buffer = lines.pop() ?? ''
 
           for (const line of lines) {
-            if (line.startsWith('data: ')) {
+            if (line.startsWith('event: ')) {
+              currentEvent = line.slice(7).trim()
+            } else if (line.startsWith('data: ')) {
               const data = line.slice(6).trim()
               if (data === '[DONE]') break
               try {
                 const parsed = JSON.parse(data)
-                if (parsed.token) {
-                  setStreamingContent((prev) => prev + parsed.token)
+                if (currentEvent === 'chunk' && parsed.text) {
+                  setStreamingContent((prev) => prev + parsed.text)
+                } else if (currentEvent === 'citation') {
+                  setStreamingCitations((prev) => [...prev, parsed as Citation])
                 }
               } catch {
                 // Ignore parse errors for partial chunks
@@ -154,6 +162,7 @@ export function useSendMessage(sessionId: string | undefined) {
       } finally {
         setIsStreaming(false)
         setStreamingContent('')
+        setStreamingCitations([])
         // Refresh session messages
         queryClient.invalidateQueries({
           queryKey: ['chat', 'sessions', sessionId],
@@ -168,5 +177,5 @@ export function useSendMessage(sessionId: string | undefined) {
     abortRef.current?.abort()
   }, [])
 
-  return { sendMessage, streamingContent, isStreaming, abort }
+  return { sendMessage, streamingContent, streamingCitations, isStreaming, abort }
 }

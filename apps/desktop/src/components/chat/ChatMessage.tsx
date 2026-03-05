@@ -5,10 +5,17 @@ import type { ChatMessage as ChatMessageType, Citation } from '@/hooks/useChat'
 
 interface ChatMessageProps {
   message: ChatMessageType | { role: 'assistant'; content: string; isStreaming: true; citations?: Citation[] }
+  currentVideoId?: string
+  onSeek?: (time: number) => void
 }
 
 // Replaces [N] citation markers with CitationLink components
-function renderWithCitations(content: string, citations: Citation[] | undefined) {
+function renderWithCitations(
+  content: string,
+  citations: Citation[] | undefined,
+  currentVideoId?: string,
+  onSeek?: (time: number) => void,
+) {
   if (!citations || citations.length === 0) {
     return (
       <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
@@ -26,7 +33,7 @@ function renderWithCitations(content: string, citations: Citation[] | undefined)
           const idx = parseInt(match[1], 10)
           const citation = citations.find((c) => c.index === idx)
           if (citation) {
-            return <CitationLink key={i} citation={citation} />
+            return <CitationLink key={i} citation={citation} currentVideoId={currentVideoId} onSeek={onSeek} />
           }
         }
         return part ? (
@@ -39,7 +46,7 @@ function renderWithCitations(content: string, citations: Citation[] | undefined)
   )
 }
 
-export function ChatMessage({ message }: ChatMessageProps) {
+export function ChatMessage({ message, currentVideoId, onSeek }: ChatMessageProps) {
   const isUser = message.role === 'user'
   const isStreaming = 'isStreaming' in message && message.isStreaming
 
@@ -66,7 +73,9 @@ export function ChatMessage({ message }: ChatMessageProps) {
         ) : (
           renderWithCitations(
             message.content,
-            'citations' in message ? message.citations : undefined
+            'citations' in message ? message.citations : undefined,
+            currentVideoId,
+            onSeek,
           )
         )}
       </div>
