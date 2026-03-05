@@ -1,0 +1,13 @@
+{
+  "version": "5",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1772723037793,
+      "tag": "0000_brief_dakota_north",
+      "breakpoints": true
+    }
+  ]
+}

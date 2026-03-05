@@ -23,3 +23,6 @@ Thumbs.db
 
 # Worktrees (isolated development)
 .worktrees/
+
+# MCP Configuration
+.symphony_mcp_config.json
