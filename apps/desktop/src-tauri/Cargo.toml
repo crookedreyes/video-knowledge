@@ -13,7 +13,7 @@ name = "desktop"
 path = "src/main.rs"
 
 [dependencies]
-tauri = { version = "2", features = ["shell-open", "fs-read-file", "fs-write-file"] }
+tauri = { version = "2" }
 tauri-plugin-shell = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-notification = "2"
