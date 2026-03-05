@@ -1,0 +1,8 @@
+{
+  "name": "@vide-know/shared",
+  "version": "0.0.1",
+  "type": "module",
+  "exports": {
+    ".": "./src/constants.ts"
+  }
+}
