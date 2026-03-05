@@ -1,0 +1,21 @@
+{
+  "name": "video-knowledge",
+  "version": "0.0.1",
+  "description": "Video Knowledge - Extract knowledge from videos with AI",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/desktop",
+    "apps/backend"
+  ],
+  "scripts": {
+    "dev:desktop": "bun --cwd apps/desktop run dev",
+    "dev:backend": "bun --cwd apps/backend run dev",
+    "build:desktop": "bun --cwd apps/desktop run build",
+    "build:backend": "bun --cwd apps/backend run build",
+    "db:push": "bun --cwd apps/backend run db:push",
+    "db:generate": "bun --cwd apps/backend run db:generate"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
