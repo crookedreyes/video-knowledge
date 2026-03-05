@@ -3,7 +3,16 @@ import { logger } from 'hono/logger';
 import { cors } from 'hono/cors';
 import { getDb } from './db/index.js';
 import { ConfigService } from './services/config.js';
+import { IngestionPipeline } from './services/pipeline.js';
+import {
+  StubDownloadService,
+  StubTranscriptionService,
+  StubVectorStoreService,
+  StubSummarizationService,
+  StubTaggerService,
+} from './services/stubs.js';
 import { settingsRouter } from './routes/settings.js';
+import { videosRouter } from './routes/videos.js';
 
 // Simple logger
 const pinoLogger = {
@@ -18,7 +27,13 @@ const pinoLogger = {
 };
 
 // Create Hono app
-const app = new Hono<{ Variables: { db: Awaited<ReturnType<typeof getDb>>; configService: ConfigService } }>();
+const app = new Hono<{
+  Variables: {
+    db: Awaited<ReturnType<typeof getDb>>;
+    configService: ConfigService;
+    pipeline: IngestionPipeline;
+  };
+}>();
 
 // CORS middleware - allow requests from Tauri webview
 app.use(
@@ -96,15 +111,39 @@ const configService = new ConfigService(db);
 await configService.initialize();
 pinoLogger.info('Config service initialized successfully');
 
-// Attach db and configService to context for use in routes
+// Initialize pipeline with stub services (replaced when blocker tickets land)
+const pipeline = new IngestionPipeline(db, {
+  download: new StubDownloadService(),
+  transcription: new StubTranscriptionService(),
+  vectorStore: new StubVectorStoreService(),
+  summarization: new StubSummarizationService(),
+  tagger: new StubTaggerService(),
+});
+
+// Log pipeline events
+pipeline.on('progress', (event) => {
+  pinoLogger.info(`[pipeline] ${event.videoId} → step ${event.stepIndex + 1}/${event.totalSteps}: ${event.step}`);
+});
+pipeline.on('complete', (event: { videoId: string }) => {
+  pinoLogger.info(`[pipeline] ${event.videoId} → complete (ready)`);
+});
+pipeline.on('error', (event: { videoId: string; step: string; error: Error }) => {
+  pinoLogger.error(event.error, `[pipeline] ${event.videoId} failed at step: ${event.step}`);
+});
+
+pinoLogger.info('IngestionPipeline initialized successfully');
+
+// Attach shared context to all requests
 app.use(async (c, next) => {
   c.set('db', db);
   c.set('configService', configService);
+  c.set('pipeline', pipeline);
   await next();
 });
 
-// Settings routes
+// Routes
 app.route('/api/settings', settingsRouter);
+app.route('/api/videos', videosRouter);
 
 const PORT = parseInt(process.env.PORT || '3456', 10);
 const HOST = process.env.HOST || 'localhost';
