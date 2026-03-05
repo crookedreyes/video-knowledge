@@ -21,11 +21,7 @@ app.get("/api/health", (c) => {
 app.get("/api/settings", (c) => {
   try {
     const allSettings = db.select().from(settings).all();
-    const settingsObj: Record<string, string> = {};
-    for (const setting of allSettings) {
-      settingsObj[setting.key] = setting.value;
-    }
-    return c.json(settingsObj);
+    return c.json(allSettings);
   } catch (error) {
     console.error("Error fetching settings:", error);
     return c.json({ error: "Internal server error" }, 500);
@@ -53,7 +49,47 @@ app.get("/api/settings/:key", (c) => {
   }
 });
 
-// Create/update setting
+// Create/update setting (with key in body)
+app.post("/api/settings", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { key, value } = body;
+
+    if (!key || !value || typeof value !== "string") {
+      return c.json({ error: "Invalid key or value provided" }, 400);
+    }
+
+    const existing = db
+      .select()
+      .from(settings)
+      .where(eq(settings.key, key))
+      .get();
+
+    let result;
+    if (existing) {
+      db.update(settings).set({ value }).where(eq(settings.key, key)).run();
+      result = db
+        .select()
+        .from(settings)
+        .where(eq(settings.key, key))
+        .get();
+    } else {
+      db.insert(settings).values({ key, value }).run();
+      result = db
+        .select()
+        .from(settings)
+        .where(eq(settings.key, key))
+        .get();
+    }
+
+    return c.json(result);
+  } catch (error) {
+    console.error("Error saving setting:", error);
+    return c.json({ error: "Internal server error" }, 500);
+  }
+});
+
+// Create/update setting (with key in path)
 app.post("/api/settings/:key", async (c) => {
   try {
     const key = c.req.param("key");

@@ -13,8 +13,12 @@
     "react-dom": "^19.0.0",
     "react-router-dom": "^6.23.0",
     "@tauri-apps/api": "^1.5.0",
+    "@radix-ui/react-slot": "*",
+    "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
-    "tailwind-merge": "^2.3.0"
+    "tailwind-merge": "^2.3.0",
+    "axios": "^1.6.0",
+    "lucide-react": "^0.263.0"
   },
   "devDependencies": {
     "typescript": "^5.3.3",
