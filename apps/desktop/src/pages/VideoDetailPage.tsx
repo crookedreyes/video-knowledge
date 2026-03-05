@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useState, useRef, useCallback, useEffect } from 'react'
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiGet, apiPatch, apiDelete, type ApiResponse } from '@/lib/api'
 import { VideoPlayer, type VideoPlayerHandle } from '@/components/VideoPlayer'
@@ -59,6 +59,7 @@ interface VideoData {
 export function VideoDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const queryClient = useQueryClient()
   const playerRef = useRef<VideoPlayerHandle>(null)
   const [currentTime, setCurrentTime] = useState(0)
@@ -99,6 +100,16 @@ export function VideoDetailPage() {
   const handleTimeUpdate = useCallback((time: number) => {
     setCurrentTime(time)
   }, [])
+
+  // Seek to timestamp from URL param `t` once player and video are ready
+  useEffect(() => {
+    const t = searchParams.get('t')
+    if (!t || !video) return
+    const seconds = parseFloat(t)
+    if (!isNaN(seconds) && seconds > 0) {
+      playerRef.current?.seekTo(seconds)
+    }
+  }, [video, searchParams])
 
   if (isLoading) {
     return (
