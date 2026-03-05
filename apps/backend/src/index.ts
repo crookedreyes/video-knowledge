@@ -3,7 +3,9 @@ import { logger } from 'hono/logger';
 import { cors } from 'hono/cors';
 import { getDb } from './db/index.js';
 import { ConfigService } from './services/config.js';
+import { DockerManager } from './services/docker.js';
 import { settingsRouter } from './routes/settings.js';
+import { dockerSettingsRouter } from './routes/docker.js';
 
 // Simple logger
 const pinoLogger = {
@@ -18,7 +20,7 @@ const pinoLogger = {
 };
 
 // Create Hono app
-const app = new Hono<{ Variables: { db: Awaited<ReturnType<typeof getDb>>; configService: ConfigService } }>();
+const app = new Hono<{ Variables: { db: Awaited<ReturnType<typeof getDb>>; configService: ConfigService; dockerManager: DockerManager } }>();
 
 // CORS middleware - allow requests from Tauri webview
 app.use(
@@ -96,15 +98,40 @@ const configService = new ConfigService(db);
 await configService.initialize();
 pinoLogger.info('Config service initialized successfully');
 
-// Attach db and configService to context for use in routes
+// Initialize Docker manager with settings
+const dockerManager = new DockerManager({
+  socketPath: configService.get<string>('docker.socketPath'),
+  port: configService.get<number>('chroma.port'),
+  image: configService.get<string>('chroma.image'),
+  dataPath: configService.get<string>('paths.data'),
+});
+
+// Start ChromaDB container in background — non-fatal if Docker unavailable
+dockerManager.ensureRunning().then(() => {
+  pinoLogger.info('ChromaDB container is running');
+}).catch((err: Error) => {
+  pinoLogger.error(err, 'ChromaDB container failed to start');
+});
+
+// Attach db, configService, and dockerManager to context for use in routes
 app.use(async (c, next) => {
   c.set('db', db);
   c.set('configService', configService);
+  c.set('dockerManager', dockerManager);
   await next();
 });
 
 // Settings routes
 app.route('/api/settings', settingsRouter);
+
+// Docker management routes
+app.route('/api/settings/docker', dockerSettingsRouter);
+
+// Docker health endpoint
+app.get('/api/health/docker', async (c) => {
+  const status = await dockerManager.getStatus();
+  return c.json(status);
+});
 
 const PORT = parseInt(process.env.PORT || '3456', 10);
 const HOST = process.env.HOST || 'localhost';
