@@ -9,6 +9,7 @@ import { LLMService } from './services/llm.js';
 import { EmbeddingService } from './services/embedding.js';
 import { TranscriptionService } from './services/transcription.js';
 import { VectorStoreService } from './services/vectorStore.js';
+import { RAGService } from './services/rag.js';
 import { settingsRouter } from './routes/settings.js';
 import { dockerSettingsRouter } from './routes/docker.js';
 import { healthRouter } from './routes/health.js';
@@ -17,6 +18,7 @@ import { videosRouter } from './routes/videos.js';
 import { tagsRouter } from './routes/tags.js';
 import { filesRouter } from './routes/files.js';
 import { searchRouter } from './routes/search.js';
+import { chatRouter } from './routes/chat.js';
 import { PipelineOrchestrator } from './services/pipeline/orchestrator.js';
 
 const pinoLogger = {
@@ -40,6 +42,7 @@ const app = new Hono<{
     embeddingService: EmbeddingService;
     transcriptionService: TranscriptionService;
     vectorStoreService: VectorStoreService;
+    ragService: RAGService;
     pipeline: PipelineOrchestrator;
   };
 }>();
@@ -96,6 +99,9 @@ pinoLogger.info('Transcription service initialized successfully');
 const vectorStoreService = new VectorStoreService(null, configService);
 pinoLogger.info('VectorStore service initialized successfully');
 
+const ragService = new RAGService(llmService, embeddingService, vectorStoreService, configService, db);
+pinoLogger.info('RAG service initialized successfully');
+
 const pipeline = new PipelineOrchestrator(db, configService);
 pinoLogger.info('Pipeline orchestrator initialized');
 
@@ -108,6 +114,7 @@ app.use(async (c, next) => {
   c.set('embeddingService', embeddingService);
   c.set('transcriptionService', transcriptionService);
   c.set('vectorStoreService', vectorStoreService);
+  c.set('ragService', ragService);
   c.set('pipeline', pipeline);
   await next();
 });
@@ -121,6 +128,7 @@ app.route('/api/videos', videosRouter);
 app.route('/api/tags', tagsRouter);
 app.route('/api/files', filesRouter);
 app.route('/api/search', searchRouter);
+app.route('/api/chat', chatRouter);
 
 app.get('/api/health/docker', async (c) => {
   const status = await dockerManager.getStatus();
