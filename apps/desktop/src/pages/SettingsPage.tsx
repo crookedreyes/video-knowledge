@@ -12,7 +12,7 @@ export function SettingsPage() {
   const navigate = useNavigate()
   const { settings, loading, error, updateSettings, setTheme } = useSettings()
   const [saving, setSaving] = useState(false)
-  const [formData, setFormData] = useState(settings || {})
+  const [formData, setFormData] = useState<Record<string, any>>(settings || {})
 
   if (loading) {
     return (
@@ -99,22 +99,19 @@ export function SettingsPage() {
           )}
           {currentTab === 'llm' && (
             <LLMTab
-              settings={settings}
-              formData={formData as typeof settings}
+              formData={formData}
               onInputChange={handleInputChange}
             />
           )}
           {currentTab === 'transcription' && (
             <TranscriptionTab
-              settings={settings}
-              formData={formData as typeof settings}
+              formData={formData}
               onInputChange={handleInputChange}
             />
           )}
           {currentTab === 'docker' && (
             <DockerTab
-              settings={settings}
-              formData={formData as typeof settings}
+              formData={formData}
               onInputChange={handleInputChange}
             />
           )}
@@ -189,11 +186,9 @@ function GeneralTab({
 }
 
 function LLMTab({
-  settings,
   formData,
   onInputChange,
 }: {
-  settings: any
   formData: any
   onInputChange: (field: string, value: unknown) => void
 }) {
@@ -271,11 +266,9 @@ function LLMTab({
 }
 
 function TranscriptionTab({
-  settings,
   formData,
   onInputChange,
 }: {
-  settings: any
   formData: any
   onInputChange: (field: string, value: unknown) => void
 }) {
@@ -339,11 +332,9 @@ function TranscriptionTab({
 }
 
 function DockerTab({
-  settings,
   formData,
   onInputChange,
 }: {
-  settings: any
   formData: any
   onInputChange: (field: string, value: unknown) => void
 }) {

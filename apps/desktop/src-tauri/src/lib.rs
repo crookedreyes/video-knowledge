@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 use std::process::Child;
-use tauri::{State, AppHandle};
+use tauri::{Manager, State, AppHandle, RunEvent};
 
 #[derive(Default)]
 pub struct SidecarState {
@@ -131,10 +131,13 @@ pub fn run() {
                 });
             }
         })
-        .on_exit(|app| {
-            let sidecar_state: State<SidecarState> = app.state();
-            if let Ok(mut process_guard) = sidecar_state.process.lock() {
-                if let Some(mut process) = process_guard.take() {
+        .build(tauri::generate_context!())
+        .unwrap_or_else(|e| panic!("Failed to build Tauri application: {}", e))
+        .run(|app, event| {
+            if let RunEvent::Exit = event {
+                let process_arc = app.state::<SidecarState>().process.clone();
+                let mut guard = process_arc.lock().unwrap();
+                if let Some(mut process) = guard.take() {
                     log::info!("Killing sidecar process");
                     match process.kill() {
                         Ok(_) => log::info!("Sidecar process killed"),
@@ -142,7 +145,5 @@ pub fn run() {
                     }
                 }
             }
-        })
-        .run(tauri::generate_context!())
-        .unwrap_or_else(|e| panic!("Failed to start Tauri application: {}", e));
+        });
 }

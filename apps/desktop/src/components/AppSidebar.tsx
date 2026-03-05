@@ -34,15 +34,14 @@ export function AppSidebar() {
         <SidebarMenu>
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.path}>
-              <SidebarMenuButton
-                asChild
-                isActive={isActive(item.path)}
-              >
-                <Link to={item.path} className="w-full">
-                  {item.icon}
-                  <span>{item.label}</span>
-                </Link>
-              </SidebarMenuButton>
+              <Link to={item.path} className="w-full">
+                <SidebarMenuButton
+                  isActive={isActive(item.path)}
+                  icon={item.icon}
+                >
+                  {item.label}
+                </SidebarMenuButton>
+              </Link>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
@@ -51,15 +50,14 @@ export function AppSidebar() {
       <SidebarFooter className="space-y-2">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              isActive={isActive('/settings')}
-            >
-              <Link to="/settings" className="w-full">
-                <Settings size={20} />
-                <span>Settings</span>
-              </Link>
-            </SidebarMenuButton>
+            <Link to="/settings" className="w-full">
+              <SidebarMenuButton
+                isActive={isActive('/settings')}
+                icon={<Settings size={20} />}
+              >
+                Settings
+              </SidebarMenuButton>
+            </Link>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton className="bg-slate-700 hover:bg-slate-600 text-slate-50">
