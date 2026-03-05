@@ -1,6 +1,10 @@
+import { fileURLToPath } from 'url'
+import path from 'path'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
-import path from 'path'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
@@ -17,6 +21,7 @@ export default defineConfig(async () => ({
   },
   envPrefix: ['VITE_', 'TAURI_'],
   build: {
+    // Browser support: Chrome 100+, Safari 13+, ES2021 baseline
     target: ['es2021', 'chrome100', 'safari13'],
     minify: !process.env.TAURI_DEBUG ? 'esbuild' : false,
     sourcemap: !!process.env.TAURI_DEBUG,
