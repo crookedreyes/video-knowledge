@@ -1,4 +1,5 @@
 import Dockerode from 'dockerode';
+import { spawn } from 'node:child_process';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
@@ -126,28 +127,52 @@ export class DockerManager {
     );
   }
 
+  private async isChromaHealthy(): Promise<boolean> {
+    try {
+      const res = await fetch(`http://localhost:${this.port}/api/v2/heartbeat`);
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  private startPythonChroma(): void {
+    console.log('[DockerManager] Starting ChromaDB via Python chroma package');
+    const proc = spawn(
+      'chroma',
+      ['run', '--host', 'localhost', '--port', String(this.port), '--path', this.dataDir],
+      { detached: true, stdio: 'ignore' }
+    );
+    proc.unref();
+  }
+
   async ensureRunning(): Promise<void> {
-    if (!(await this.isDockerAvailable())) {
-      throw new Error(
-        'Docker daemon is not available. Please install and start Docker.'
-      );
+    // Fast path: ChromaDB is already reachable (started externally or previously)
+    if (await this.isChromaHealthy()) {
+      console.log(`[DockerManager] ChromaDB already running on port ${this.port}`);
+      return;
     }
 
-    await this.ensureImage();
+    if (await this.isDockerAvailable()) {
+      await this.ensureImage();
 
-    let container = await this.findContainer();
+      let container = await this.findContainer();
 
-    if (!container) {
-      container = await this.createContainer();
-      console.log(`[DockerManager] Container ${CONTAINER_NAME} created`);
-    }
+      if (!container) {
+        container = await this.createContainer();
+        console.log(`[DockerManager] Container ${CONTAINER_NAME} created`);
+      }
 
-    const inspect = await container.inspect();
-    if (!inspect.State.Running) {
-      console.log(`[DockerManager] Starting container ${CONTAINER_NAME}`);
-      await container.start();
+      const inspect = await container.inspect();
+      if (!inspect.State.Running) {
+        console.log(`[DockerManager] Starting container ${CONTAINER_NAME}`);
+        await container.start();
+      } else {
+        console.log(`[DockerManager] Container ${CONTAINER_NAME} already running`);
+      }
     } else {
-      console.log(`[DockerManager] Container ${CONTAINER_NAME} already running`);
+      // Docker not available — fall back to native Python ChromaDB
+      this.startPythonChroma();
     }
 
     await this.waitForReady();
@@ -168,14 +193,16 @@ export class DockerManager {
   }
 
   async getStatus(): Promise<DockerStatus> {
+    const chromaHealthy = await this.isChromaHealthy();
     const dockerAvailable = await this.isDockerAvailable();
+
     if (!dockerAvailable) {
       return {
         dockerAvailable: false,
         containerState: null,
         containerRunning: false,
-        chromaHealthy: false,
-        error: 'Docker daemon not available',
+        chromaHealthy,
+        error: chromaHealthy ? undefined : 'Docker daemon not available',
       };
     }
 
@@ -185,22 +212,12 @@ export class DockerManager {
         dockerAvailable: true,
         containerState: 'not created',
         containerRunning: false,
-        chromaHealthy: false,
+        chromaHealthy,
       };
     }
 
     const inspect = await container.inspect();
     const containerRunning = inspect.State.Running ?? false;
-
-    let chromaHealthy = false;
-    if (containerRunning) {
-      try {
-        const res = await fetch(`http://localhost:${this.port}/api/v2/heartbeat`);
-        chromaHealthy = res.ok;
-      } catch {
-        chromaHealthy = false;
-      }
-    }
 
     return {
       dockerAvailable: true,
